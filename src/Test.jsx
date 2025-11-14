@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import api, { API_BASE } from './utils/api'
 
 function Test() {
   const [backendStatus, setBackendStatus] = useState('checking...')
@@ -11,26 +12,13 @@ function Test() {
 
   const checkBackendConnection = async () => {
     try {
-      // Get backend URL from environment variable
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-      setBackendUrl(baseUrl)
-
-      // Test basic backend connectivity
-      const response = await fetch(`${baseUrl}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setBackendStatus(`✅ Connected - ${data.message || 'OK'}`)
-        
-        // Now test database connectivity
-        await checkDatabaseConnection(baseUrl)
+      setBackendUrl(API_BASE)
+      const response = await api.get('/')
+      if (response.status === 200) {
+        setBackendStatus(`✅ Connected - ${response.data.message || 'OK'}`)
+        await checkDatabaseConnection()
       } else {
-        setBackendStatus(`❌ Failed - ${response.status} ${response.statusText}`)
+        setBackendStatus(`❌ Failed - ${response.status}`)
         setDatabaseStatus({ error: 'Backend not accessible' })
       }
     } catch (error) {
@@ -39,18 +27,11 @@ function Test() {
     }
   }
 
-  const checkDatabaseConnection = async (baseUrl) => {
+  const checkDatabaseConnection = async () => {
     try {
-      const response = await fetch(`${baseUrl}/test`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const dbData = await response.json()
-        setDatabaseStatus(dbData)
+      const response = await api.get('/test')
+      if (response.status === 200) {
+        setDatabaseStatus(response.data)
       } else {
         setDatabaseStatus({ error: `Failed to check database - ${response.status}` })
       }
